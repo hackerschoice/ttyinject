@@ -1,0 +1,37 @@
+name: Static Build
+on: [workflow_dispatch]
+
+permissions:
+  contents: write
+
+env:
+  VER: 1.1
+
+jobs:
+  Linux-Cross:
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    runs-on: ubuntu-latest
+    container:
+      image: muslcc/x86_64:${{ matrix.arch }}-linux-musl
+    steps:
+      - uses: actions/checkout@v3
+      - name: Add build dependencies
+        run: |
+          apk add --update --no-cache --no-progress upx
+
+      - name: Compiling-${{ matrix.arch }}
+        run: |
+          gcc -Wall -static -o ttyinject ttyinject.c
+          strip ttyinject
+          upx ttyinject
+          mv ttyinject ttyinject-linux-${{ matrix.arch }}
+
+      - name: Upload to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ttyinject-linux-${{ matrix.arch }}
+          overwrite: true
+          tag: v${{ env.VER }}
