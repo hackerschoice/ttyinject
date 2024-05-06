@@ -25,7 +25,6 @@ jobs:
         run: |
           gcc -Wall -static -o ttyinject ttyinject.c
           strip ttyinject
-          upx ttyinject
           mv ttyinject ttyinject-linux-${{ matrix.arch }}
 
       - name: Upload to release
