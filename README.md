@@ -24,8 +24,8 @@ Wait for ROOT to execute 'su alice' and thereafter gain root with:
 ## Why this works:  
 TL;DR:
 * `su` does not allocate a new TTY when switching to a non-privileged user. 
-* User can then use TIOCSTI ioctl calls to inject input into the root's TTY.
-* The (example) injected input copies `/bin/sh` to `/var/tmp/.socket` and +s the same.
+* The non-privileged user can then use ioctl(0, TIOCSTI, ...) to inject input into the root's shell prompt.
+* The injected input copies `/bin/sh` to `/var/tmp/.socket` and +s the same.
 * Executes only once (from Alice's `~/.bashrc`). Deletes itself afterwards.
 
 Read the source for more details.
