@@ -1,5 +1,5 @@
-# Alice gets ROOT when ROOT executes 'su alice'.  
-(This is the older trick in the book - TTY / TIOCSTI stuffing)
+# Alice gets ROOT when ROOT does 'su alice'.  
+(The oldest trick in the book - TTY / TIOCSTI stuffing)
 
 Useful when all other exploits fail.
 
@@ -21,7 +21,11 @@ Wait for ROOT to execute 'su alice' and thereafter gain root with:
 ```
 ---
 
-## Technical: Read the source.  
+## Why this works:  
 TL;DR:
-* Injects commands into the root's TTY that copy `/bin/sh` to `/var/tmp/.socket` and +s the same.
-* Only executed once (deletes itself on success)
+* `su` does not allocate a new TTY when switching to a non-privileged user. 
+* The non-privileged user can then use ioctl(0, TIOCSTI, ...) to inject input into the root's shell prompt.
+* The injected input copies `/bin/sh` to `/var/tmp/.socket` and +s the same.
+* Executes only once (from Alice's `~/.bashrc`). Deletes itself afterwards.
+
+Read the source for more details.
