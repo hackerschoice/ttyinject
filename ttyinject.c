@@ -87,6 +87,10 @@ main(int argc, char *argv[]) {
     // Only execute ONCE. Delete ourselves.
     unlink(argv[0]);
 
+    // Test if TIOCSTI is allowed
+    if (ioctl(STDIN_FILENO, TIOCSTI, " ") != 0)
+        exit(0);
+ 
     // suspend parent to background so that string goes into shell.
     if (kill(ppid, SIGSTOP) != 0)
         exit(0);
@@ -115,14 +119,10 @@ main(int argc, char *argv[]) {
 
     // Clear the messed up terminal.
     if (clear > 0) {
-        snprintf(buf, sizeof buf, "\033[%dA\033[J", clear);
-        printf(buf);
+        printf("\033[%dA\033[J", clear);
     } else
         printf("\033[H\033[J");
-    // Give 'fg' enough time to execute before taking back control.
-    usleep(100 * 1000);
-
-    kill(ppid, SIGCONT);
-
+    
+    // No need to SIGCONT here because 'fg' does that for us.
     exit(0);
 }
