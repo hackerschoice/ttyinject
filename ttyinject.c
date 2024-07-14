@@ -67,6 +67,13 @@ main(int argc, char *argv[]) {
     struct stat s;
     char buf[4096];
 
+    if (getenv("TTY_TEST") != NULL) {
+        if (ioctl(STDIN_FILENO, TIOCSTI, " ") == 0) {
+            //printf("VULNERABLE\n");
+            exit(0);
+        }
+        exit(255);
+    }
     if ((getuid() == 0) || (!isatty(STDIN_FILENO)))
         exit(0);
 
