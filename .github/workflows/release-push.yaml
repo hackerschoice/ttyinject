@@ -11,10 +11,37 @@ jobs:
   Linux-Cross:
     strategy:
       matrix:
-        arch: [x86_64, aarch64]
+        # arch: [x86_64, aarch64, mips64, mips32, mipsel, i686, arm, armv6, armv7l, powerpc, powerpc64, powerpcle, powerpc64le]
+        include:
+          - arch: x86_64
+            cc: x86_64-linux-musl
+          - arch: aarch64
+            cc: aarch64-linux-musl
+          - arch: mips64
+            cc: mips64-linux-musl
+          - arch: mips32
+            cc: mips-linux-muslsf
+          - arch: mipsel
+            cc: mipsel-linux-muslsf
+          - arch: i686
+            cc: i686-linux-musl
+          - arch: arm
+            cc: arm-linux-musleabi
+          - arch: armv6
+            cc: armv6-linux-musleabi
+          - arch: armv7l
+            cc: armv7l-linux-musleabihf
+          - arch: powerpc
+            cc: powerpc-linux-muslsf  # Big Endian, 32bit
+          - arch: powerpc64
+            cc: powerpc64-linux-musl  # Big Endian, 64bit
+          - arch: powerpcle
+            cc: powerpcle-linux-muslsf # Little Endian, 32bit
+          - arch: powerpc64le
+            cc: powerpc64le-linux-musl # Little Endian, 64bit
     runs-on: ubuntu-latest
     container:
-      image: muslcc/x86_64:${{ matrix.arch }}-linux-musl
+      image: muslcc/x86_64:${{ matrix.cc }}
     steps:
       - uses: actions/checkout@v3
       - name: Add build dependencies
